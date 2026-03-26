@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
 import { GeneratedLogo } from "@/components/GeneratedLogo";
+import type { InvoicePdfLabels } from "@/lib/i18n/invoicePdfLabels";
 import type { InvoiceData, InvoiceFieldSelection } from "@/lib/invoiceTypes";
-import { formatMoney, formatPercent } from "@/lib/format";
 import { C } from "./colors";
+import type { InvoiceLayoutBodyProps } from "./layoutTypes";
 
 export const invoiceRootClassName =
   "box-border w-[794px] min-h-[1123px] p-10 text-[12px] leading-snug shadow-[0_1px_2px_rgba(0,0,0,0.05)]";
@@ -15,7 +16,7 @@ export function invoiceRootStyle(): CSSProperties {
   };
 }
 
-export function FictifBanner() {
+export function FictifBanner({ text }: { text: string }) {
   return (
     <div
       className="mb-3 rounded border px-3 py-2 text-center text-[11px] font-semibold"
@@ -25,14 +26,15 @@ export function FictifBanner() {
         color: C.bannerText,
       }}
     >
-      Document fictif — test uniquement — ne pas utiliser à des fins réelles
+      {text}
     </div>
   );
 }
 
-type BlockProps = {
-  data: InvoiceData;
-  selection: InvoiceFieldSelection;
+type BlockProps = Pick<
+  InvoiceLayoutBodyProps,
+  "data" | "selection" | "locale" | "pdf"
+> & {
   sellerTitle?: string;
   buyerTitle?: string;
 };
@@ -40,9 +42,17 @@ type BlockProps = {
 export function SellerBlock({
   data,
   selection,
-  sellerTitle = "Vendeur",
+  locale,
+  pdf,
+  sellerTitle,
 }: BlockProps) {
   const s = selection;
+  const title = sellerTitle ?? pdf.seller;
+  const cityLine =
+    locale === "en"
+      ? `${data.seller.city} ${data.seller.zip}`.trim()
+      : `${data.seller.zip} ${data.seller.city}`.trim();
+
   return (
     <div className="min-w-0 flex-1">
       {s.sellerLogo && (
@@ -59,20 +69,26 @@ export function SellerBlock({
         className="text-[11px] font-semibold uppercase tracking-wide"
         style={{ color: C.textMuted }}
       >
-        {sellerTitle}
+        {title}
       </p>
       <p className="text-base font-bold">{data.seller.name}</p>
       <p>{data.seller.addressLine1}</p>
-      <p>
-        {data.seller.zip} {data.seller.city}
-      </p>
+      <p>{cityLine}</p>
       <p>{data.seller.country}</p>
       {s.sellerSiret && data.seller.siret && (
-        <p className="mt-1">SIRET : {data.seller.siret}</p>
+        <p className="mt-1">
+          {pdf.sellerCompanyId} : {data.seller.siret}
+        </p>
       )}
-      {s.sellerTvaFr && data.seller.tvaFr && <p>TVA : {data.seller.tvaFr}</p>}
+      {s.sellerTvaFr && data.seller.tvaFr && (
+        <p>
+          {pdf.taxId} : {data.seller.tvaFr}
+        </p>
+      )}
       {s.sellerPhone && data.seller.phone && (
-        <p>Tél. : {data.seller.phone}</p>
+        <p>
+          {pdf.phonePrefix} {data.seller.phone}
+        </p>
       )}
       {s.sellerEmail && data.seller.email && <p>{data.seller.email}</p>}
     </div>
@@ -82,31 +98,43 @@ export function SellerBlock({
 export function BuyerBlock({
   data,
   selection,
-  buyerTitle = "Client",
+  locale,
+  pdf,
+  buyerTitle,
 }: BlockProps) {
   const s = selection;
+  const title = buyerTitle ?? pdf.buyer;
+  const cityLine =
+    locale === "en"
+      ? `${data.buyer.city} ${data.buyer.zip}`.trim()
+      : `${data.buyer.zip} ${data.buyer.city}`.trim();
+
   return (
     <div>
       <p
         className="text-[11px] font-semibold uppercase tracking-wide"
         style={{ color: C.textMuted }}
       >
-        {buyerTitle}
+        {title}
       </p>
       <p className="text-base font-bold">{data.buyer.name}</p>
       <p>{data.buyer.addressLine1}</p>
-      <p>
-        {data.buyer.zip} {data.buyer.city}
-      </p>
+      <p>{cityLine}</p>
       <p>{data.buyer.country}</p>
       {s.buyerSiret && data.buyer.siret && (
-        <p className="mt-1">SIRET : {data.buyer.siret}</p>
+        <p className="mt-1">
+          {pdf.buyerCompanyId} : {data.buyer.siret}
+        </p>
       )}
       {s.buyerTvaIntra && data.buyer.tvaIntra && (
-        <p>TVA intracom. : {data.buyer.tvaIntra}</p>
+        <p>
+          {pdf.buyerTaxIntra} : {data.buyer.tvaIntra}
+        </p>
       )}
       {s.buyerPhone && data.buyer.phone && (
-        <p>Tél. : {data.buyer.phone}</p>
+        <p>
+          {pdf.phonePrefix} {data.buyer.phone}
+        </p>
       )}
       {s.buyerEmail && data.buyer.email && <p>{data.buyer.email}</p>}
     </div>
@@ -116,27 +144,48 @@ export function BuyerBlock({
 export function InvoiceMetaRight({
   data,
   selection,
+  pdf,
 }: {
   data: InvoiceData;
   selection: InvoiceFieldSelection;
+  pdf: InvoicePdfLabels;
 }) {
   const s = selection;
   return (
     <div className="text-right">
-      <h1 className="text-2xl font-bold tracking-tight">FACTURE</h1>
-      <p className="mt-2 font-medium">N° {data.invoiceNumber}</p>
-      <p>Date d’émission : {data.issueDate}</p>
-      <p>Date d’échéance : {data.dueDate}</p>
+      <h1 className="text-2xl font-bold tracking-tight">{pdf.invoiceTitle}</h1>
+      <p className="mt-2 font-medium">
+        {pdf.invoiceNumberPrefix} {data.invoiceNumber}
+      </p>
+      <p>
+        {pdf.issueDate} {data.issueDate}
+      </p>
+      <p>
+        {pdf.dueDate} {data.dueDate}
+      </p>
       {s.paymentDelayDays && data.paymentDelayDays != null && (
         <p className="mt-1 text-[11px]" style={{ color: C.textSoft }}>
-          Paiement sous {data.paymentDelayDays} jours
+          {pdf.paymentWithinDays.replace(
+            "{days}",
+            String(data.paymentDelayDays),
+          )}
         </p>
       )}
     </div>
   );
 }
 
-export function LinesTable({ data }: { data: InvoiceData }) {
+export function LinesTable({
+  data,
+  pdf,
+  formatMoney,
+  formatPercent,
+}: {
+  data: InvoiceData;
+  pdf: InvoicePdfLabels;
+  formatMoney: (n: number) => string;
+  formatPercent: (n: number) => string;
+}) {
   return (
     <table
       className="mb-6 w-full border-collapse border text-[11px]"
@@ -148,31 +197,31 @@ export function LinesTable({ data }: { data: InvoiceData }) {
             className="border px-2 py-1 text-left font-semibold"
             style={{ borderColor: C.border }}
           >
-            Désignation
+            {pdf.tableDescription}
           </th>
           <th
             className="w-16 border px-2 py-1 text-right font-semibold"
             style={{ borderColor: C.border }}
           >
-            Qté
+            {pdf.tableQty}
           </th>
           <th
             className="w-24 border px-2 py-1 text-right font-semibold"
             style={{ borderColor: C.border }}
           >
-            PU HT
+            {pdf.tableUnitPrice}
           </th>
           <th
             className="w-16 border px-2 py-1 text-right font-semibold"
             style={{ borderColor: C.border }}
           >
-            TVA
+            {pdf.tableTax}
           </th>
           <th
             className="w-28 border px-2 py-1 text-right font-semibold"
             style={{ borderColor: C.border }}
           >
-            Total HT
+            {pdf.tableLineTotal}
           </th>
         </tr>
       </thead>
@@ -219,19 +268,31 @@ export function LinesTable({ data }: { data: InvoiceData }) {
   );
 }
 
-export function TotalsBox({ data }: { data: InvoiceData }) {
+export function TotalsBox({
+  data,
+  pdf,
+  formatMoney,
+  formatPercent,
+}: {
+  data: InvoiceData;
+  pdf: InvoicePdfLabels;
+  formatMoney: (n: number) => string;
+  formatPercent: (n: number) => string;
+}) {
   return (
     <div
       className="ml-auto w-72 border p-3 text-[11px]"
       style={{ borderColor: C.border }}
     >
       <div className="flex justify-between py-0.5">
-        <span>Total HT</span>
+        <span>{pdf.totalExclTax}</span>
         <span>{formatMoney(data.totals.ht)}</span>
       </div>
       {Object.entries(data.totals.tvaByRate).map(([rate, amount]) => (
         <div key={rate} className="flex justify-between py-0.5">
-          <span>TVA {formatPercent(Number(rate))}</span>
+          <span>
+            {pdf.taxLinePrefix} {formatPercent(Number(rate))}
+          </span>
           <span>{formatMoney(amount)}</span>
         </div>
       ))}
@@ -239,7 +300,7 @@ export function TotalsBox({ data }: { data: InvoiceData }) {
         className="mt-1 flex justify-between border-t pt-1 font-bold"
         style={{ borderColor: C.border }}
       >
-        <span>Total TTC</span>
+        <span>{pdf.totalInclTax}</span>
         <span>{formatMoney(data.totals.ttc)}</span>
       </div>
     </div>
@@ -249,9 +310,11 @@ export function TotalsBox({ data }: { data: InvoiceData }) {
 export function PaymentSection({
   data,
   selection,
+  pdf,
 }: {
   data: InvoiceData;
   selection: InvoiceFieldSelection;
+  pdf: InvoicePdfLabels;
 }) {
   const s = selection;
   if (
@@ -263,13 +326,13 @@ export function PaymentSection({
     <div className="mt-8 space-y-2 text-[11px]" style={{ color: C.textDark }}>
       {s.paymentTerms && data.paymentTerms && (
         <p>
-          <span className="font-semibold">Conditions : </span>
+          <span className="font-semibold">{pdf.paymentTermsLabel} </span>
           {data.paymentTerms}
         </p>
       )}
       {s.iban && data.iban && (
         <p>
-          <span className="font-semibold">IBAN : </span>
+          <span className="font-semibold">{pdf.bankLabel} </span>
           {data.iban}
         </p>
       )}
@@ -294,8 +357,10 @@ export function LegalSection({
 
 export function BonPourAccordSection({
   selection,
+  pdf,
 }: {
   selection: InvoiceFieldSelection;
+  pdf: InvoicePdfLabels;
 }) {
   if (!selection.bonPourAccord) return null;
   return (
@@ -303,8 +368,8 @@ export function BonPourAccordSection({
       className="mt-12 border-t pt-4 text-[11px]"
       style={{ borderColor: C.borderLight }}
     >
-      <p className="mb-8">Bon pour accord</p>
-      <p style={{ color: C.textMuted }}>Date, cachet et signature</p>
+      <p className="mb-8">{pdf.bonPourAccord}</p>
+      <p style={{ color: C.textMuted }}>{pdf.signatureHint}</p>
       <div className="mt-16 border-b" style={{ borderColor: C.border }} />
     </div>
   );

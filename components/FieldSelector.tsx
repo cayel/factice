@@ -1,9 +1,11 @@
 "use client";
 
-import { FIELD_GROUPS } from "@/lib/invoiceFieldConfig";
+import type { FieldGroup } from "@/lib/invoiceFieldConfig";
 import type { InvoiceFieldKey, InvoiceFieldSelection } from "@/lib/invoiceTypes";
 
 export type FieldSelectorProps = {
+  fieldGroups: FieldGroup[];
+  lineCountLabel: string;
   selection: InvoiceFieldSelection;
   onToggle: (key: InvoiceFieldKey) => void;
   lineCount: number;
@@ -11,6 +13,8 @@ export type FieldSelectorProps = {
 };
 
 export function FieldSelector({
+  fieldGroups,
+  lineCountLabel,
   selection,
   onToggle,
   lineCount,
@@ -23,7 +27,7 @@ export function FieldSelector({
           htmlFor="lineCount"
           className="mb-2 block text-sm font-medium text-neutral-700"
         >
-          Nombre de lignes de produits
+          {lineCountLabel}
         </label>
         <select
           id="lineCount"
@@ -39,7 +43,7 @@ export function FieldSelector({
         </select>
       </div>
 
-      {FIELD_GROUPS.map((group) => (
+      {fieldGroups.map((group) => (
         <fieldset key={group.id} className="space-y-2">
           <legend className="text-sm font-semibold text-neutral-900">
             {group.label}

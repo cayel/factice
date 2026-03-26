@@ -17,7 +17,10 @@ import {
 import type { InvoiceLayoutBodyProps } from "./layoutTypes";
 
 export const LayoutBandeau = forwardRef<HTMLDivElement, InvoiceLayoutBodyProps>(
-  function LayoutBandeau({ data, selection }, ref) {
+  function LayoutBandeau(
+    { data, selection, locale, pdf, formatMoney, formatPercent },
+    ref,
+  ) {
     const s = selection;
 
     return (
@@ -26,7 +29,7 @@ export const LayoutBandeau = forwardRef<HTMLDivElement, InvoiceLayoutBodyProps>(
         className={invoiceRootClassName}
         style={invoiceRootStyle()}
       >
-        <FictifBanner />
+        <FictifBanner text={pdf.fictifBanner} />
 
         <div
           className="-mx-10 mb-6 w-[calc(100%+5rem)] max-w-none px-10 py-5"
@@ -41,21 +44,28 @@ export const LayoutBandeau = forwardRef<HTMLDivElement, InvoiceLayoutBodyProps>(
                 className="text-[10px] font-semibold uppercase tracking-widest"
                 style={{ color: C.bandeauMuted }}
               >
-                Facturation
+                {pdf.bandeauKicker}
               </p>
-              <p className="text-3xl font-bold tracking-tight">FACTURE</p>
+              <p className="text-3xl font-bold tracking-tight">
+                {pdf.invoiceTitle}
+              </p>
             </div>
             <div className="text-right text-[12px] leading-relaxed">
-              <p className="font-semibold">N° {data.invoiceNumber}</p>
-              <p style={{ color: C.bandeauMuted }}>
-                Émission : {data.issueDate}
+              <p className="font-semibold">
+                {pdf.invoiceNumberPrefix} {data.invoiceNumber}
               </p>
               <p style={{ color: C.bandeauMuted }}>
-                Échéance : {data.dueDate}
+                {pdf.bandeauIssuePrefix} {data.issueDate}
+              </p>
+              <p style={{ color: C.bandeauMuted }}>
+                {pdf.bandeauDuePrefix} {data.dueDate}
               </p>
               {s.paymentDelayDays && data.paymentDelayDays != null && (
                 <p className="mt-1 text-[11px]" style={{ color: C.bandeauMuted }}>
-                  Délai : {data.paymentDelayDays} jours
+                  {pdf.bandeauDelayLine.replace(
+                    "{days}",
+                    String(data.paymentDelayDays),
+                  )}
                 </p>
               )}
             </div>
@@ -63,15 +73,37 @@ export const LayoutBandeau = forwardRef<HTMLDivElement, InvoiceLayoutBodyProps>(
         </div>
 
         <div className="mb-8 grid gap-6 sm:grid-cols-2">
-          <SellerBlock data={data} selection={selection} sellerTitle="Émetteur" />
-          <BuyerBlock data={data} selection={selection} buyerTitle="Adressé à" />
+          <SellerBlock
+            data={data}
+            selection={selection}
+            locale={locale}
+            pdf={pdf}
+            sellerTitle={pdf.sellerTitleEmitter}
+          />
+          <BuyerBlock
+            data={data}
+            selection={selection}
+            locale={locale}
+            pdf={pdf}
+            buyerTitle={pdf.buyerTitleAddressed}
+          />
         </div>
 
-        <LinesTable data={data} />
-        <TotalsBox data={data} />
-        <PaymentSection data={data} selection={selection} />
+        <LinesTable
+          data={data}
+          pdf={pdf}
+          formatMoney={formatMoney}
+          formatPercent={formatPercent}
+        />
+        <TotalsBox
+          data={data}
+          pdf={pdf}
+          formatMoney={formatMoney}
+          formatPercent={formatPercent}
+        />
+        <PaymentSection data={data} selection={selection} pdf={pdf} />
         <LegalSection data={data} selection={selection} />
-        <BonPourAccordSection selection={selection} />
+        <BonPourAccordSection selection={selection} pdf={pdf} />
       </div>
     );
   },

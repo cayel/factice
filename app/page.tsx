@@ -1,20 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { FieldSelector } from "@/components/FieldSelector";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
-import { defaultFieldSelection } from "@/lib/invoiceFieldConfig";
+import { useLocale } from "@/lib/i18n/context";
+import { formatMoneyAmount, formatTaxPercent } from "@/lib/format";
+import { defaultFieldSelection, getFieldGroups } from "@/lib/invoiceFieldConfig";
 import { generateFakeInvoiceData } from "@/lib/generateFakeInvoiceData";
 import {
-  DOCUMENT_MODE_HELP,
   INVOICE_DOCUMENT_MODES,
   type InvoiceDocumentMode,
   isInvoiceDocumentMode,
 } from "@/lib/invoiceDocumentMode";
 import {
-  INVOICE_LAYOUTS,
   type InvoiceLayoutId,
   isInvoiceLayoutId,
 } from "@/lib/invoiceLayouts";
@@ -26,6 +26,7 @@ import {
 } from "@/lib/welcomeStorage";
 
 export default function Home() {
+  const { locale, messages } = useLocale();
   const [selection, setSelection] = useState<InvoiceFieldSelection>(() =>
     defaultFieldSelection(true),
   );
@@ -41,6 +42,17 @@ export default function Home() {
   const [welcomeKey, setWelcomeKey] = useState(0);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
+  const fieldGroups = useMemo(() => getFieldGroups(locale), [locale]);
+  const pdf = messages.pdf;
+  const formatMoney = useMemo(
+    () => (amount: number) => formatMoneyAmount(amount, locale),
+    [locale],
+  );
+  const formatPercent = useMemo(
+    () => (rate: number) => formatTaxPercent(rate, locale),
+    [locale],
+  );
+
   useEffect(() => {
     if (!readWelcomeDismissed()) {
       setWelcomeOpen(true);
@@ -48,8 +60,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setData(generateFakeInvoiceData(lineCount));
-  }, [lineCount]);
+    setData(generateFakeInvoiceData(lineCount, locale));
+  }, [lineCount, locale]);
 
   const handleWelcomeClose = useCallback(
     (options: { neverShowAgain: boolean }) => {
@@ -67,8 +79,8 @@ export default function Home() {
   }, []);
 
   const randomizeData = useCallback(() => {
-    setData(generateFakeInvoiceData(lineCount));
-  }, [lineCount]);
+    setData(generateFakeInvoiceData(lineCount, locale));
+  }, [lineCount, locale]);
 
   const handleLineCountChange = useCallback((n: number) => {
     setLineCount(n);
@@ -86,7 +98,9 @@ export default function Home() {
       const bytes = await generateScannedInvoicePdf(el);
       const safe = data.invoiceNumber.replace(/[^\w.-]+/g, "_");
       const prefix =
-        documentMode === "facturette" ? "facturette-fictive" : "facture-fictive";
+        documentMode === "facturette"
+          ? messages.pdfFilenameFacturette
+          : messages.pdfFilenameFacture;
       downloadPdf(bytes, `${prefix}-${safe}.pdf`);
     } finally {
       setBusy(false);
@@ -106,10 +120,10 @@ export default function Home() {
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-4 lg:max-w-md">
           <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-              Type de document
+              {messages.docType}
             </h2>
             <label htmlFor="documentMode" className="sr-only">
-              Type de document
+              {messages.docType}
             </label>
             <select
               id="documentMode"
@@ -122,18 +136,18 @@ export default function Home() {
             >
               {INVOICE_DOCUMENT_MODES.map((id) => (
                 <option key={id} value={id}>
-                  {DOCUMENT_MODE_HELP[id].label}
+                  {messages.documentModes[id].label}
                 </option>
               ))}
             </select>
             <p className="mb-6 text-xs leading-relaxed text-neutral-600">
-              {DOCUMENT_MODE_HELP[documentMode].description}
+              {messages.documentModes[documentMode].description}
             </p>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-              Disposition
+              {messages.disposition}
             </h2>
             <label htmlFor="layout" className="sr-only">
-              Disposition de la facture
+              {messages.disposition}
             </label>
             <select
               id="layout"
@@ -145,7 +159,7 @@ export default function Home() {
               }}
               className="mb-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500"
             >
-              {INVOICE_LAYOUTS.map((opt) => (
+              {messages.layouts.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}
                 </option>
@@ -153,13 +167,15 @@ export default function Home() {
             </select>
             <p className="mb-6 text-xs leading-relaxed text-neutral-600">
               {documentMode === "facturette"
-                ? "La facturette utilise une disposition fixe (ticket condensé). Repassez en « Facture » pour choisir un autre modèle."
-                : INVOICE_LAYOUTS.find((o) => o.id === layout)?.description}
+                ? messages.layoutFacturetteHint
+                : messages.layouts.find((o) => o.id === layout)?.description}
             </p>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-              Champs sur la facture
+              {messages.fieldsTitle}
             </h2>
             <FieldSelector
+              fieldGroups={fieldGroups}
+              lineCountLabel={messages.lineCountLabel}
               selection={selection}
               onToggle={toggleField}
               lineCount={lineCount}
@@ -172,7 +188,7 @@ export default function Home() {
               onClick={randomizeData}
               className="rounded-md border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
             >
-              Nouvelles données aléatoires
+              {messages.btnRandom}
             </button>
             <button
               type="button"
@@ -180,7 +196,7 @@ export default function Home() {
               disabled={busy || !data}
               className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-neutral-800 disabled:opacity-50"
             >
-              {busy ? "Génération…" : "Télécharger le PDF"}
+              {busy ? messages.btnPdfLoading : messages.btnPdf}
             </button>
           </div>
         </aside>
@@ -194,13 +210,17 @@ export default function Home() {
                 selection={selection}
                 layout={layout}
                 mode={documentMode}
+                locale={locale}
+                pdf={pdf}
+                formatMoney={formatMoney}
+                formatPercent={formatPercent}
               />
             ) : (
               <div
                 className="flex w-[794px] min-h-[1123px] items-center justify-center bg-white text-sm text-neutral-500 shadow-sm"
                 aria-hidden
               >
-                Préparation de l’aperçu…
+                {messages.previewLoading}
               </div>
             )}
           </div>

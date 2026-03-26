@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useLocale } from "@/lib/i18n/context";
 
 export type WelcomeDialogProps = {
   open: boolean;
@@ -11,6 +12,8 @@ export type WelcomeDialogProps = {
  * Modale d’accueil : présentation de Factice + option « ne plus afficher ».
  */
 export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
+  const { messages } = useLocale();
+  const w = messages.welcome;
   const titleId = useId();
   const descId = useId();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -56,7 +59,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
       <button
         type="button"
         className="absolute inset-0 bg-[#0f172a]/45 backdrop-blur-[2px] transition-opacity"
-        aria-label="Fermer le guide"
+        aria-label={w.closeBackdropAria}
         onClick={() => onClose({ neverShowAgain })}
       />
       <div
@@ -68,55 +71,39 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
       >
         <div className="border-b border-[#e2e8f0] bg-gradient-to-br from-[#f8fafc] to-[#eef2ff] px-5 py-4 sm:px-6 sm:py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6366f1]">
-            Bienvenue
+            {w.badge}
           </p>
           <h2
             id={titleId}
             className="mt-1 text-xl font-bold tracking-tight text-[#0f172a] sm:text-2xl"
           >
-            Factice
+            {w.title}
           </h2>
           <p id={descId} className="mt-2 text-sm leading-relaxed text-[#475569]">
-            Générez des <strong className="font-semibold text-[#334155]">factures
-            entièrement fictives</strong> en PDF (aspect scan) pour tester vos
-            outils sans données réelles.
+            {w.intro}
           </p>
         </div>
 
         <div className="space-y-4 px-5 py-4 text-sm leading-relaxed text-[#334155] sm:px-6">
           <section>
             <h3 className="mb-2 text-[13px] font-semibold text-[#0f172a]">
-              À quoi ça sert ?
+              {w.sectionPurpose}
             </h3>
             <ul className="list-inside list-disc space-y-1.5 text-[13px] text-[#475569]">
-              <li>Valider un logiciel de comptabilité ou de facturation.</li>
-              <li>Tester des imports, OCR ou workflows (ex. facturation électronique).</li>
-              <li>Former des utilisateurs sur des exemples sans risque.</li>
+              {w.purposeItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
           </section>
 
           <section>
             <h3 className="mb-2 text-[13px] font-semibold text-[#0f172a]">
-              Comment ça marche ?
+              {w.sectionHow}
             </h3>
             <ol className="list-inside list-decimal space-y-1.5 text-[13px] text-[#475569]">
-              <li>
-                Choisissez le <strong className="font-medium">type</strong> de
-                document (facture ou facturette) et la{" "}
-                <strong className="font-medium">disposition</strong>.
-              </li>
-              <li>
-                Cochez les <strong className="font-medium">champs</strong> à
-                afficher (SIRET, IBAN, etc.).
-              </li>
-              <li>
-                Les <strong className="font-medium">données sont aléatoires</strong>{" "}
-                — vous pouvez en générer de nouvelles à tout moment.
-              </li>
-              <li>
-                Téléchargez un <strong className="font-medium">PDF</strong> qui
-                imite une page scannée (image, légers défauts).
-              </li>
+              {w.howItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ol>
           </section>
 
@@ -124,9 +111,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
             className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-950"
             role="note"
           >
-            <strong className="font-semibold">Important :</strong> tout est{" "}
-            <strong>fictif</strong> et réservé aux tests — ne pas utiliser comme
-            document réel ou légal.
+            {w.important}
           </div>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-3 text-[13px] text-[#475569]">
@@ -136,11 +121,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
               onChange={(e) => setNeverShowAgain(e.target.checked)}
               className="mt-0.5 size-4 shrink-0 rounded border-[#cbd5e1] text-[#4f46e5] focus:ring-[#6366f1]"
             />
-            <span>
-              Ne plus afficher cet écran au démarrage (vous pourrez le rouvrir
-              via <strong className="font-medium text-[#334155]">Guide</strong>{" "}
-              dans l’en-tête).
-            </span>
+            <span>{w.checkbox}</span>
           </label>
         </div>
 
@@ -150,7 +131,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
             className="rounded-lg border border-[#cbd5e1] bg-white px-4 py-2.5 text-sm font-medium text-[#475569] shadow-sm hover:bg-[#f1f5f9]"
             onClick={() => onClose({ neverShowAgain })}
           >
-            Fermer
+            {w.close}
           </button>
           <button
             ref={closeBtnRef}
@@ -158,7 +139,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
             className="rounded-lg bg-[#1e293b] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#334155]"
             onClick={() => onClose({ neverShowAgain })}
           >
-            Commencer
+            {w.start}
           </button>
         </div>
       </div>

@@ -2,7 +2,6 @@
 
 import { forwardRef } from "react";
 import { GeneratedLogo } from "@/components/GeneratedLogo";
-import { formatMoney, formatPercent } from "@/lib/format";
 import { C } from "./colors";
 import {
   BonPourAccordSection,
@@ -14,10 +13,21 @@ import {
 } from "./parts";
 import type { InvoiceLayoutBodyProps } from "./layoutTypes";
 
-/** Mise en page type facturette : ticket centré, texte resserré, titre FACTURETTE. */
 export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProps>(
-  function LayoutFacturette({ data, selection }, ref) {
+  function LayoutFacturette(
+    { data, selection, locale, pdf, formatMoney, formatPercent },
+    ref,
+  ) {
     const s = selection;
+
+    const cityLineSeller =
+      locale === "en"
+        ? `${data.seller.city} ${data.seller.zip}`.trim()
+        : `${data.seller.zip} ${data.seller.city}`.trim();
+    const cityLineBuyer =
+      locale === "en"
+        ? `${data.buyer.city} ${data.buyer.zip}`.trim()
+        : `${data.buyer.zip} ${data.buyer.city}`.trim();
 
     return (
       <div
@@ -25,7 +35,7 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
         className={invoiceRootClassName}
         style={invoiceRootStyle()}
       >
-        <FictifBanner />
+        <FictifBanner text={pdf.fictifBanner} />
 
         <div className="mx-auto flex max-w-[440px] flex-col items-stretch pb-8">
           <div
@@ -36,7 +46,7 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
               className="mb-4 text-center text-[10px] font-semibold uppercase tracking-widest"
               style={{ color: C.textMuted }}
             >
-              Facturette (document simplifié)
+              {pdf.facturetteKicker}
             </p>
             {s.sellerLogo && (
               <div className="mx-auto mb-3 flex justify-center">
@@ -49,10 +59,10 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
               </div>
             )}
             <h1 className="mb-1 text-center text-2xl font-bold tracking-tight">
-              FACTURETTE
+              {pdf.facturetteTitle}
             </h1>
             <p className="mb-4 text-center text-[11px]" style={{ color: C.textSoft }}>
-              N° {data.invoiceNumber} · {data.issueDate}
+              {pdf.invoiceNumberPrefix} {data.invoiceNumber} · {data.issueDate}
             </p>
 
             <div
@@ -61,17 +71,21 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
             >
               <p className="font-bold">{data.seller.name}</p>
               <p>{data.seller.addressLine1}</p>
-              <p>
-                {data.seller.zip} {data.seller.city}
-              </p>
+              <p>{cityLineSeller}</p>
               {s.sellerSiret && data.seller.siret && (
-                <p className="mt-1">SIRET {data.seller.siret}</p>
+                <p className="mt-1">
+                  {pdf.sellerCompanyId} {data.seller.siret}
+                </p>
               )}
               {s.sellerTvaFr && data.seller.tvaFr && (
-                <p>TVA {data.seller.tvaFr}</p>
+                <p>
+                  {pdf.taxId} {data.seller.tvaFr}
+                </p>
               )}
               {s.sellerPhone && data.seller.phone && (
-                <p>Tél. {data.seller.phone}</p>
+                <p>
+                  {pdf.phonePrefix} {data.seller.phone}
+                </p>
               )}
               {s.sellerEmail && data.seller.email && <p>{data.seller.email}</p>}
             </div>
@@ -81,18 +95,20 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
               style={{ color: C.textDark }}
             >
               <p className="font-semibold" style={{ color: C.textMuted }}>
-                Client
+                {pdf.buyer}
               </p>
               <p className="font-medium">{data.buyer.name}</p>
               <p>{data.buyer.addressLine1}</p>
-              <p>
-                {data.buyer.zip} {data.buyer.city}
-              </p>
+              <p>{cityLineBuyer}</p>
               {s.buyerSiret && data.buyer.siret && (
-                <p>SIRET {data.buyer.siret}</p>
+                <p>
+                  {pdf.buyerCompanyId} {data.buyer.siret}
+                </p>
               )}
               {s.buyerTvaIntra && data.buyer.tvaIntra && (
-                <p>TVA {data.buyer.tvaIntra}</p>
+                <p>
+                  {pdf.buyerTaxIntra} {data.buyer.tvaIntra}
+                </p>
               )}
               {s.buyerPhone && data.buyer.phone && (
                 <p>{data.buyer.phone}</p>
@@ -112,19 +128,19 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
                     className="border px-1 py-0.5 text-left font-semibold"
                     style={{ borderColor: C.border }}
                   >
-                    Libellé
+                    {pdf.facturetteColumnLabel}
                   </th>
                   <th
                     className="w-10 border px-1 py-0.5 text-right font-semibold"
                     style={{ borderColor: C.border }}
                   >
-                    Qté
+                    {pdf.tableQty}
                   </th>
                   <th
                     className="w-16 border px-1 py-0.5 text-right font-semibold"
                     style={{ borderColor: C.border }}
                   >
-                    TTC
+                    {pdf.facturetteTableTotal}
                   </th>
                 </tr>
               </thead>
@@ -163,12 +179,14 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
               style={{ borderColor: C.border }}
             >
               <div className="flex justify-between">
-                <span>Total HT</span>
+                <span>{pdf.facturetteSubtotal}</span>
                 <span>{formatMoney(data.totals.ht)}</span>
               </div>
               {Object.entries(data.totals.tvaByRate).map(([rate, amount]) => (
                 <div key={rate} className="flex justify-between">
-                  <span>TVA {formatPercent(Number(rate))}</span>
+                  <span>
+                    {pdf.taxLinePrefix} {formatPercent(Number(rate))}
+                  </span>
                   <span>{formatMoney(amount)}</span>
                 </div>
               ))}
@@ -176,7 +194,7 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
                 className="flex justify-between border-t pt-1 text-[12px] font-bold"
                 style={{ borderColor: C.border }}
               >
-                <span>À payer TTC</span>
+                <span>{pdf.facturettePayDue}</span>
                 <span>{formatMoney(data.totals.ttc)}</span>
               </div>
             </div>
@@ -186,17 +204,18 @@ export const LayoutFacturette = forwardRef<HTMLDivElement, InvoiceLayoutBodyProp
                 className="mt-3 text-center text-[9px]"
                 style={{ color: C.textMuted }}
               >
-                Paiement sous {data.paymentDelayDays} jours — échéance{" "}
-                {data.dueDate}
+                {pdf.facturetteDueReminder
+                  .replace("{days}", String(data.paymentDelayDays))
+                  .replace("{due}", data.dueDate)}
               </p>
             )}
           </div>
         </div>
 
         <div className="mx-auto max-w-[440px]">
-          <PaymentSection data={data} selection={selection} />
+          <PaymentSection data={data} selection={selection} pdf={pdf} />
           <LegalSection data={data} selection={selection} />
-          <BonPourAccordSection selection={selection} />
+          <BonPourAccordSection selection={selection} pdf={pdf} />
         </div>
       </div>
     );

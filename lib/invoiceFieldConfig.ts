@@ -1,3 +1,5 @@
+import { getMessages } from "@/lib/i18n/messages";
+import type { Locale } from "@/lib/i18n/types";
 import type { InvoiceFieldKey } from "./invoiceTypes";
 
 export type FieldGroup = {
@@ -6,50 +8,67 @@ export type FieldGroup = {
   fields: { key: InvoiceFieldKey; label: string }[];
 };
 
-export const FIELD_GROUPS: FieldGroup[] = [
-  {
-    id: "seller",
-    label: "Vendeur",
-    fields: [
-      { key: "sellerLogo", label: "Bloc logo (placeholder)" },
-      { key: "sellerPhone", label: "Téléphone" },
-      { key: "sellerEmail", label: "E-mail" },
-      { key: "sellerSiret", label: "SIRET" },
-      { key: "sellerTvaFr", label: "N° TVA intracommunautaire (FR)" },
-    ],
-  },
-  {
-    id: "buyer",
-    label: "Client",
-    fields: [
-      { key: "buyerPhone", label: "Téléphone" },
-      { key: "buyerEmail", label: "E-mail" },
-      { key: "buyerSiret", label: "SIRET" },
-      { key: "buyerTvaIntra", label: "N° TVA intracommunautaire (UE)" },
-    ],
-  },
-  {
-    id: "payment",
-    label: "Paiement & conditions",
-    fields: [
-      { key: "paymentTerms", label: "Conditions de paiement (texte)" },
-      { key: "iban", label: "IBAN" },
-      { key: "paymentDelayDays", label: "Délai de paiement (jours)" },
-    ],
-  },
-  {
-    id: "other",
-    label: "Autres",
-    fields: [
-      { key: "legalFooter", label: "Mentions légales (pied de page)" },
-      { key: "bonPourAccord", label: "Ligne « Bon pour accord »" },
-    ],
-  },
+export const ALL_FIELD_KEYS: InvoiceFieldKey[] = [
+  "sellerLogo",
+  "sellerPhone",
+  "sellerEmail",
+  "sellerSiret",
+  "sellerTvaFr",
+  "buyerPhone",
+  "buyerEmail",
+  "buyerSiret",
+  "buyerTvaIntra",
+  "paymentTerms",
+  "iban",
+  "paymentDelayDays",
+  "legalFooter",
+  "bonPourAccord",
 ];
 
-export const ALL_FIELD_KEYS: InvoiceFieldKey[] = FIELD_GROUPS.flatMap((g) =>
-  g.fields.map((f) => f.key),
-);
+export function getFieldGroups(locale: Locale): FieldGroup[] {
+  const m = getMessages(locale);
+  const f = m.fields;
+  return [
+    {
+      id: "seller",
+      label: m.groups.seller,
+      fields: [
+        { key: "sellerLogo", label: f.sellerLogo },
+        { key: "sellerPhone", label: f.sellerPhone },
+        { key: "sellerEmail", label: f.sellerEmail },
+        { key: "sellerSiret", label: f.sellerSiret },
+        { key: "sellerTvaFr", label: f.sellerTvaFr },
+      ],
+    },
+    {
+      id: "buyer",
+      label: m.groups.buyer,
+      fields: [
+        { key: "buyerPhone", label: f.buyerPhone },
+        { key: "buyerEmail", label: f.buyerEmail },
+        { key: "buyerSiret", label: f.buyerSiret },
+        { key: "buyerTvaIntra", label: f.buyerTvaIntra },
+      ],
+    },
+    {
+      id: "payment",
+      label: m.groups.payment,
+      fields: [
+        { key: "paymentTerms", label: f.paymentTerms },
+        { key: "iban", label: f.iban },
+        { key: "paymentDelayDays", label: f.paymentDelayDays },
+      ],
+    },
+    {
+      id: "other",
+      label: m.groups.other,
+      fields: [
+        { key: "legalFooter", label: f.legalFooter },
+        { key: "bonPourAccord", label: f.bonPourAccord },
+      ],
+    },
+  ];
+}
 
 export function defaultFieldSelection(
   all = true,
