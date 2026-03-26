@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { FieldSelector } from "@/components/FieldSelector";
+import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import { defaultFieldSelection } from "@/lib/invoiceFieldConfig";
 import { generateFakeInvoiceData } from "@/lib/generateFakeInvoiceData";
@@ -19,6 +20,10 @@ import {
 } from "@/lib/invoiceLayouts";
 import type { InvoiceData, InvoiceFieldKey, InvoiceFieldSelection } from "@/lib/invoiceTypes";
 import { downloadPdf, generateScannedInvoicePdf } from "@/lib/scanPipeline";
+import {
+  readWelcomeDismissed,
+  writeWelcomeDismissed,
+} from "@/lib/welcomeStorage";
 
 export default function Home() {
   const [selection, setSelection] = useState<InvoiceFieldSelection>(() =>
@@ -31,11 +36,35 @@ export default function Home() {
   /** null au premier rendu (SSR + hydratation) pour éviter tout écart de contenu aléatoire. */
   const [data, setData] = useState<InvoiceData | null>(null);
   const [busy, setBusy] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  /** Incrémenté à chaque ouverture du guide pour réinitialiser l’état de la modale. */
+  const [welcomeKey, setWelcomeKey] = useState(0);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!readWelcomeDismissed()) {
+      setWelcomeOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     setData(generateFakeInvoiceData(lineCount));
   }, [lineCount]);
+
+  const handleWelcomeClose = useCallback(
+    (options: { neverShowAgain: boolean }) => {
+      if (options.neverShowAgain) {
+        writeWelcomeDismissed(true);
+      }
+      setWelcomeOpen(false);
+    },
+    [],
+  );
+
+  const openWelcome = useCallback(() => {
+    setWelcomeKey((k) => k + 1);
+    setWelcomeOpen(true);
+  }, []);
 
   const randomizeData = useCallback(() => {
     setData(generateFakeInvoiceData(lineCount));
@@ -66,7 +95,12 @@ export default function Home() {
 
   return (
     <div className="min-h-full bg-[#f4f4f5] text-neutral-900">
-      <AppHeader />
+      <WelcomeDialog
+        key={welcomeKey}
+        open={welcomeOpen}
+        onClose={handleWelcomeClose}
+      />
+      <AppHeader onOpenWelcome={openWelcome} />
 
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 sm:gap-5 sm:py-5 lg:flex-row lg:items-start">
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-4 lg:max-w-md">

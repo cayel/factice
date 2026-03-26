@@ -4,6 +4,7 @@ Application web pour produire des **factures entièrement fictives** au format *
 
 ## Fonctionnalités
 
+- **Écran d’accueil** (guide) à la première visite, avec option *ne plus afficher* ; réouverture via **Guide** dans l’en-tête. Préférence stockée dans le navigateur (`localStorage`).
 - Données **générées aléatoirement** (librairie Faker, locale FR) — aucune saisie obligatoire.
 - Choix des **champs** affichés (SIRET, TVA, IBAN, mentions légales, etc.).
 - **Dispositions** : classique, bandeau, deux colonnes ; mode **facturette** (ticket condensé).
