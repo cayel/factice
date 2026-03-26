@@ -3,3 +3,5 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+Projet **Factice** (`factice`, package npm) : app Next.js — factures fictives, PDF côté client. Prérequis et déploiement : voir [README.md](README.md).

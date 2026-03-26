@@ -1,10 +1,5 @@
 import { fakerFR as faker } from "@faker-js/faker";
-import type {
-  InvoiceData,
-  InvoiceFieldKey,
-  InvoiceFieldSelection,
-  InvoiceLine,
-} from "./invoiceTypes";
+import type { InvoiceData, InvoiceLine } from "./invoiceTypes";
 
 const TVA_RATES = [0.2, 0.1, 0.055, 0.021] as const;
 
@@ -72,10 +67,8 @@ function computeTotals(lines: InvoiceLine[]) {
   };
 }
 
-export function generateFakeInvoiceData(
-  selection: InvoiceFieldSelection,
-  lineCount: number,
-): InvoiceData {
+/** Génère un jeu de données entièrement fictif. Les champs affichés sur le PDF sont filtrés par `InvoiceTemplate` selon la sélection. */
+export function generateFakeInvoiceData(lineCount: number): InvoiceData {
   const n = Math.min(15, Math.max(1, Math.floor(lineCount)));
   const sellerSiren = fakeSiren();
 
@@ -99,10 +92,10 @@ export function generateFakeInvoiceData(
     zip: faker.location.zipCode(),
     city: faker.location.city(),
     country: "France",
-    ...(selection.sellerPhone && { phone: faker.phone.number() }),
-    ...(selection.sellerEmail && { email: faker.internet.email() }),
-    ...(selection.sellerSiret && { siret: fakeSiret() }),
-    ...(selection.sellerTvaFr && { tvaFr: fakeTvaFr(sellerSiren) }),
+    phone: faker.phone.number(),
+    email: faker.internet.email(),
+    siret: fakeSiret(),
+    tvaFr: fakeTvaFr(sellerSiren),
   };
 
   const buyer = {
@@ -111,15 +104,15 @@ export function generateFakeInvoiceData(
     zip: faker.location.zipCode(),
     city: faker.location.city(),
     country: faker.location.country(),
-    ...(selection.buyerPhone && { phone: faker.phone.number() }),
-    ...(selection.buyerEmail && { email: faker.internet.email() }),
-    ...(selection.buyerSiret && { siret: fakeSiret() }),
-    ...(selection.buyerTvaIntra && { tvaIntra: fakeTvaIntraEu() }),
+    phone: faker.phone.number(),
+    email: faker.internet.email(),
+    siret: fakeSiret(),
+    tvaIntra: fakeTvaIntraEu(),
   };
 
   const totals = computeTotals(lines);
 
-  const data: InvoiceData = {
+  return {
     invoiceNumber: `FAC-${faker.string.alphanumeric({ length: 8, casing: "upper" })}`,
     issueDate: formatDate(issue),
     dueDate: formatDate(due),
@@ -127,56 +120,19 @@ export function generateFakeInvoiceData(
     buyer,
     lines,
     totals,
-    ...(selection.paymentTerms && {
-      paymentTerms: faker.helpers.arrayElement([
-        "Virement bancaire à réception de facture.",
-        "Paiement à 30 jours fin de mois.",
-        "Paiement comptant.",
-        "Prélèvement à échéance.",
-      ]),
-    }),
-    ...(selection.iban && { iban: fakeIbanFr() }),
-    ...(selection.paymentDelayDays && {
-      paymentDelayDays: faker.number.int({ min: 15, max: 60 }),
-    }),
-    ...(selection.legalFooter && {
-      legalFooter: [
-        `Capital social : ${faker.number.int({ min: 10, max: 500 })} 000 €`,
-        `RCS ${faker.location.city()} ${fakeSiren()}`,
-        "TVA acquise sur les débits.",
-      ].join(" — "),
-    }),
+    paymentTerms: faker.helpers.arrayElement([
+      "Virement bancaire à réception de facture.",
+      "Paiement à 30 jours fin de mois.",
+      "Paiement comptant.",
+      "Prélèvement à échéance.",
+    ]),
+    iban: fakeIbanFr(),
+    paymentDelayDays: faker.number.int({ min: 15, max: 60 }),
+    legalFooter: [
+      `Capital social : ${faker.number.int({ min: 10, max: 500 })} 000 €`,
+      `RCS ${faker.location.city()} ${fakeSiren()}`,
+      "TVA acquise sur les débits.",
+    ].join(" — "),
   };
-
-  return data;
 }
 
-export function selectionFromKeys(keys: InvoiceFieldKey[]): InvoiceFieldSelection {
-  const sel = defaultFieldSelection(false);
-  for (const k of keys) {
-    sel[k] = true;
-  }
-  return sel;
-}
-
-function defaultFieldSelection(
-  all: boolean,
-): Record<InvoiceFieldKey, boolean> {
-  const keys: InvoiceFieldKey[] = [
-    "sellerLogo",
-    "sellerPhone",
-    "sellerEmail",
-    "sellerSiret",
-    "sellerTvaFr",
-    "buyerPhone",
-    "buyerEmail",
-    "buyerSiret",
-    "buyerTvaIntra",
-    "paymentTerms",
-    "iban",
-    "paymentDelayDays",
-    "legalFooter",
-    "bonPourAccord",
-  ];
-  return Object.fromEntries(keys.map((k) => [k, all])) as InvoiceFieldSelection;
-}

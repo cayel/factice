@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Factice
 
-## Getting Started
+Application web pour produire des **factures entièrement fictives** au format **PDF** (rendu image type **numérisation**), utile pour tester un logiciel de comptabilité ou de facturation (y compris dans le contexte de la facturation électronique).
 
-First, run the development server:
+## Fonctionnalités
+
+- Données **générées aléatoirement** (librairie Faker, locale FR) — aucune saisie obligatoire.
+- Choix des **champs** affichés (SIRET, TVA, IBAN, mentions légales, etc.).
+- **Dispositions** : classique, bandeau, deux colonnes ; mode **facturette** (ticket condensé).
+- **Logo** SVG généré à la volée (initiales + palette) lorsque l’option logo est activée.
+- Export **PDF** côté navigateur : capture HTML → effets « scan » (niveaux de gris, bruit, légère rotation) → une page image.
+- Bandeau visible **document fictif / test uniquement**.
+
+## Prérequis
+
+- **Node.js** 20.9 ou supérieur (voir `engines` dans `package.json`).
+
+## Scripts
+
+| Commande | Description |
+|----------|-------------|
+| `npm run dev` | Serveur de développement ([http://localhost:3000](http://localhost:3000)) |
+| `npm run build` | Build de production |
+| `npm run start` | Lance le serveur après `build` |
+| `npm run lint` | ESLint |
+
+## Développement local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Déploiement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Aucune variable d’environnement** n’est requise pour l’usage actuel (tout est exécuté côté client pour la génération PDF).
+- **Vercel** (ou tout hébergeur Node compatible Next.js) : connecter le dépôt, laisser la commande de build par défaut (`npm run build`), point d’entrée `next start` ou adapter selon la plateforme.
+- **Build** : `npm run build` doit passer sans erreur avant déploiement.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Checklist avant mise en production
 
-## Learn More
+1. `npm run build` et `npm run lint` sans erreur.
+2. Tester manuellement : génération PDF + changement de disposition / facturette / champs.
+3. Vérifier que `next-env.d.ts` est bien versionné (il ne doit pas être ignoré par Git).
 
-To learn more about Next.js, take a look at the following resources:
+## Stack technique
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Next.js (App Router), React, TypeScript, Tailwind CSS v4
+- `@faker-js/faker`, `html2canvas`, `pdf-lib`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Licence
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Projet privé — usage interne / tests.
