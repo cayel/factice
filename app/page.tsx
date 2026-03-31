@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { track } from "@vercel/analytics";
 import { AppHeader } from "@/components/AppHeader";
 import { FieldSelector } from "@/components/FieldSelector";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
@@ -107,6 +108,13 @@ export default function Home() {
         documentMode === "facturette"
           ? messages.pdfFilenameFacturette
           : messages.pdfFilenameFacture;
+      track("pdf_generated", {
+        locale,
+        documentMode,
+        layout,
+        vatRegime,
+        lineCount,
+      });
       downloadPdf(bytes, `${prefix}-${safe}.pdf`);
     } finally {
       setBusy(false);
