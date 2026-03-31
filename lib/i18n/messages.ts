@@ -1,5 +1,6 @@
 import type { Locale } from "./types";
 import type { InvoicePdfLabels } from "./invoicePdfLabels";
+import type { VatRegimeId } from "@/lib/vatRegimes";
 
 export type Messages = {
   pdf: InvoicePdfLabels;
@@ -8,6 +9,8 @@ export type Messages = {
   guide: string;
   docType: string;
   disposition: string;
+  vatTitle: string;
+  vatModes: Record<VatRegimeId, { label: string; description: string }>;
   fieldsTitle: string;
   lineCountLabel: string;
   btnRandom: string;
@@ -158,6 +161,21 @@ export const messages: Record<Locale, Messages> = {
     guide: "Guide",
     docType: "Type de document",
     disposition: "Disposition",
+    vatTitle: "Régime TVA",
+    vatModes: {
+      france_tva: {
+        label: "France (TVA)",
+        description: "Facturation avec TVA (taux usuels).",
+      },
+      cee_intra_no_vat: {
+        label: "CEE intracom (sans TVA)",
+        description: "TVA non applicable sur la facture (opération intracom).",
+      },
+      etranger_no_vat: {
+        label: "Étranger (sans TVA)",
+        description: "Hors France et hors CEE : pas de TVA sur la facture.",
+      },
+    },
     fieldsTitle: "Champs sur la facture",
     lineCountLabel: "Nombre de lignes de produits",
     btnRandom: "Nouvelles données aléatoires",
@@ -260,6 +278,21 @@ export const messages: Record<Locale, Messages> = {
     guide: "Guide",
     docType: "Document type",
     disposition: "Layout",
+    vatTitle: "VAT regime",
+    vatModes: {
+      france_tva: {
+        label: "France (VAT)",
+        description: "Invoice includes VAT (standard rates).",
+      },
+      cee_intra_no_vat: {
+        label: "EU intracom (no VAT)",
+        description: "No VAT shown on the invoice (intracom transaction).",
+      },
+      etranger_no_vat: {
+        label: "Foreign (no VAT)",
+        description: "Outside France and outside the EU: no VAT on the invoice.",
+      },
+    },
     fieldsTitle: "Fields on the invoice",
     lineCountLabel: "Number of line items",
     btnRandom: "New random data",

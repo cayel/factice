@@ -252,7 +252,7 @@ export function LinesTable({
                 className="border px-2 py-1.5 text-right"
                 style={{ borderColor: C.border }}
               >
-                {formatPercent(line.tvaRate)}
+                {line.tvaRate > 0 ? formatPercent(line.tvaRate) : "—"}
               </td>
               <td
                 className="border px-2 py-1.5 text-right"

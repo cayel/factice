@@ -10,6 +10,11 @@ import { formatMoneyAmount, formatTaxPercent } from "@/lib/format";
 import { defaultFieldSelection, getFieldGroups } from "@/lib/invoiceFieldConfig";
 import { generateFakeInvoiceData } from "@/lib/generateFakeInvoiceData";
 import {
+  VAT_REGIMES,
+  type VatRegimeId,
+  isVatRegimeId,
+} from "@/lib/vatRegimes";
+import {
   INVOICE_DOCUMENT_MODES,
   type InvoiceDocumentMode,
   isInvoiceDocumentMode,
@@ -33,6 +38,7 @@ export default function Home() {
   const [documentMode, setDocumentMode] =
     useState<InvoiceDocumentMode>("facture");
   const [layout, setLayout] = useState<InvoiceLayoutId>("classic");
+  const [vatRegime, setVatRegime] = useState<VatRegimeId>("france_tva");
   const [lineCount, setLineCount] = useState(5);
   /** null au premier rendu (SSR + hydratation) pour éviter tout écart de contenu aléatoire. */
   const [data, setData] = useState<InvoiceData | null>(null);
@@ -60,8 +66,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setData(generateFakeInvoiceData(lineCount, locale));
-  }, [lineCount, locale]);
+    setData(generateFakeInvoiceData(lineCount, locale, vatRegime));
+  }, [lineCount, locale, vatRegime]);
 
   const handleWelcomeClose = useCallback(
     (options: { neverShowAgain: boolean }) => {
@@ -79,8 +85,8 @@ export default function Home() {
   }, []);
 
   const randomizeData = useCallback(() => {
-    setData(generateFakeInvoiceData(lineCount, locale));
-  }, [lineCount, locale]);
+    setData(generateFakeInvoiceData(lineCount, locale, vatRegime));
+  }, [lineCount, locale, vatRegime]);
 
   const handleLineCountChange = useCallback((n: number) => {
     setLineCount(n);
@@ -169,6 +175,30 @@ export default function Home() {
               {documentMode === "facturette"
                 ? messages.layoutFacturetteHint
                 : messages.layouts.find((o) => o.id === layout)?.description}
+            </p>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+              {messages.vatTitle}
+            </h2>
+            <label htmlFor="vatRegime" className="sr-only">
+              {messages.vatTitle}
+            </label>
+            <select
+              id="vatRegime"
+              value={vatRegime}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (isVatRegimeId(v)) setVatRegime(v);
+              }}
+              className="mb-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
+            >
+              {VAT_REGIMES.map((id) => (
+                <option key={id} value={id}>
+                  {messages.vatModes[id].label}
+                </option>
+              ))}
+            </select>
+            <p className="mb-6 text-xs leading-relaxed text-neutral-600">
+              {messages.vatModes[vatRegime].description}
             </p>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500">
               {messages.fieldsTitle}

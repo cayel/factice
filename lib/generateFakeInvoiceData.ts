@@ -2,9 +2,49 @@ import { fakerEN_US as fakerEn } from "@faker-js/faker";
 import { fakerFR as fakerFr } from "@faker-js/faker";
 import type { Locale } from "@/lib/i18n/types";
 import type { InvoiceData, InvoiceLine } from "./invoiceTypes";
+import type { VatRegimeId } from "./vatRegimes";
 
 const TVA_FR = [0.2, 0.1, 0.055, 0.021] as const;
 const TAX_US = [0.06, 0.07, 0.08, 0.045, 0] as const;
+
+const EU_COUNTRY_CODES = ["DE", "BE", "ES", "IT", "NL", "PT"] as const;
+const EU_COUNTRY_NAMES_FR: Record<
+  (typeof EU_COUNTRY_CODES)[number],
+  string
+> = {
+  DE: "Allemagne",
+  BE: "Belgique",
+  ES: "Espagne",
+  IT: "Italie",
+  NL: "Pays-Bas",
+  PT: "Portugal",
+};
+const EU_COUNTRY_NAMES_EN: Record<
+  (typeof EU_COUNTRY_CODES)[number],
+  string
+> = {
+  DE: "Germany",
+  BE: "Belgium",
+  ES: "Spain",
+  IT: "Italy",
+  NL: "Netherlands",
+  PT: "Portugal",
+};
+
+const NON_EU_COUNTRY_NAMES_FR = [
+  "États-Unis",
+  "Suisse",
+  "Royaume-Uni",
+  "Canada",
+  "Norvège",
+] as const;
+const NON_EU_COUNTRY_NAMES_EN = [
+  "United States",
+  "Switzerland",
+  "United Kingdom",
+  "Canada",
+  "Norway",
+] as const;
 
 function randomDigits(faker: typeof fakerFr, n: number): string {
   return faker.string.numeric({ length: n, allowLeadingZeros: true });
@@ -25,17 +65,22 @@ function fakeTvaFr(faker: typeof fakerFr, siren: string): string {
 
 function fakeTvaIntraEu(
   faker: typeof fakerFr | typeof fakerEn,
-): string {
-  const country = faker.helpers.arrayElement([
-    "DE",
-    "BE",
-    "ES",
-    "IT",
-    "NL",
-    "PT",
-  ]);
+): {
+  countryCode: (typeof EU_COUNTRY_CODES)[number];
+  tvaIntra: string;
+} {
+  const countryCode = faker.helpers.arrayElement([...EU_COUNTRY_CODES]);
   const body = faker.string.alphanumeric({ length: 10, casing: "upper" });
-  return `${country}${body}`;
+  return { countryCode, tvaIntra: `${countryCode}${body}` };
+}
+
+function pickNonEuCountry(
+  locale: Locale,
+  faker: typeof fakerFr | typeof fakerEn,
+): string {
+  const pool =
+    locale === "fr" ? NON_EU_COUNTRY_NAMES_FR : NON_EU_COUNTRY_NAMES_EN;
+  return faker.helpers.arrayElement([...pool]);
 }
 
 function fakeIbanFr(faker: typeof fakerFr): string {
@@ -65,9 +110,12 @@ function computeTotals(lines: InvoiceLine[]) {
   for (const line of lines) {
     const lineHt = line.quantity * line.unitPriceHt;
     ht += lineHt;
-    const rateKey = String(line.tvaRate);
-    const tvaAmount = lineHt * line.tvaRate;
-    tvaByRate[rateKey] = (tvaByRate[rateKey] ?? 0) + tvaAmount;
+    // Mode “sans TVA” : on ne veut pas afficher de ligne TVA à 0%.
+    if (line.tvaRate > 0) {
+      const rateKey = String(line.tvaRate);
+      const tvaAmount = lineHt * line.tvaRate;
+      tvaByRate[rateKey] = (tvaByRate[rateKey] ?? 0) + tvaAmount;
+    }
   }
 
   const totalTva = Object.values(tvaByRate).reduce((a, b) => a + b, 0);
@@ -81,8 +129,193 @@ function computeTotals(lines: InvoiceLine[]) {
 export function generateFakeInvoiceData(
   lineCount: number,
   locale: Locale,
+  vatRegime: VatRegimeId,
 ): InvoiceData {
   const n = Math.min(15, Math.max(1, Math.floor(lineCount)));
+
+  const isCeeIntraNoVat = vatRegime === "cee_intra_no_vat";
+  if (vatRegime === "cee_intra_no_vat" || vatRegime === "etranger_no_vat") {
+    if (locale === "fr") {
+      const sellerSiren = fakeSiren(fakerFr);
+
+      const lines: InvoiceLine[] = Array.from({ length: n }, () => ({
+        description: fakerFr.commerce.productName(),
+        quantity: fakerFr.number.int({ min: 1, max: 12 }),
+        unitPriceHt: fakerFr.number.float({
+          min: 5,
+          max: 800,
+          fractionDigits: 2,
+        }),
+        tvaRate: 0,
+      }));
+
+      const issue = fakerFr.date.recent({ days: 60 });
+      const due = new Date(issue);
+      due.setDate(due.getDate() + fakerFr.number.int({ min: 15, max: 45 }));
+
+      const buyer = isCeeIntraNoVat
+        ? (() => {
+            const { countryCode, tvaIntra } = fakeTvaIntraEu(fakerFr);
+            return {
+              name: fakerFr.company.name(),
+              addressLine1: fakerFr.location.streetAddress(),
+              zip: fakerFr.location.zipCode(),
+              city: fakerFr.location.city(),
+              country: EU_COUNTRY_NAMES_FR[countryCode],
+              phone: fakerFr.phone.number(),
+              email: fakerFr.internet.email(),
+              siret: fakeSiret(fakerFr),
+              tvaIntra,
+            };
+          })()
+        : (() => {
+            const country = pickNonEuCountry(locale, fakerFr);
+            return {
+              name: fakerFr.company.name(),
+              addressLine1: fakerFr.location.streetAddress(),
+              zip: fakerFr.location.zipCode(),
+              city: fakerFr.location.city(),
+              country,
+              phone: fakerFr.phone.number(),
+              email: fakerFr.internet.email(),
+              siret: fakeSiret(fakerFr),
+            };
+          })();
+
+      const seller = {
+        name: fakerFr.company.name(),
+        addressLine1: fakerFr.location.streetAddress(),
+        zip: fakerFr.location.zipCode(),
+        city: fakerFr.location.city(),
+        country: "France",
+        phone: fakerFr.phone.number(),
+        email: fakerFr.internet.email(),
+        siret: fakeSiret(fakerFr),
+        ...(isCeeIntraNoVat
+          ? { tvaFr: fakeTvaFr(fakerFr, sellerSiren) }
+          : {}),
+      };
+
+      const totals = computeTotals(lines);
+
+      return {
+        invoiceNumber: `FAC-${fakerFr.string.alphanumeric({ length: 8, casing: "upper" })}`,
+        issueDate: formatDate(issue, locale),
+        dueDate: formatDate(due, locale),
+        seller,
+        buyer,
+        lines,
+        totals,
+        paymentTerms: fakerFr.helpers.arrayElement([
+          "Virement bancaire à réception de facture.",
+          "Paiement à 30 jours fin de mois.",
+          "Paiement comptant.",
+          "Prélèvement à échéance.",
+        ]),
+        iban: fakeIbanFr(fakerFr),
+        paymentDelayDays: fakerFr.number.int({ min: 15, max: 60 }),
+        legalFooter: isCeeIntraNoVat
+          ? [
+              "TVA non applicable sur la facture (opération intracom).",
+              "TVA acquise sur les débits.",
+            ].join(" — ")
+          : [
+              "TVA non applicable sur la facture (opération hors champ).",
+              "TVA acquise sur les débits.",
+            ].join(" — "),
+      };
+    }
+
+    // locale === "en"
+    const cityName = fakerEn.location.city();
+    const state = fakerEn.location.state({ abbreviated: true });
+    const zip = fakerEn.location.zipCode();
+
+    const lines: InvoiceLine[] = Array.from({ length: n }, () => ({
+      description: fakerEn.commerce.productName(),
+      quantity: fakerEn.number.int({ min: 1, max: 12 }),
+      unitPriceHt: fakerEn.number.float({
+        min: 5,
+        max: 800,
+        fractionDigits: 2,
+      }),
+      tvaRate: 0,
+    }));
+
+    const issue = fakerEn.date.recent({ days: 60 });
+    const due = new Date(issue);
+    due.setDate(due.getDate() + fakerEn.number.int({ min: 15, max: 45 }));
+
+    const buyer = isCeeIntraNoVat
+      ? (() => {
+          const { countryCode, tvaIntra } = fakeTvaIntraEu(fakerEn);
+          return {
+            name: fakerEn.company.name(),
+            addressLine1: fakerEn.location.streetAddress(),
+            zip: fakerEn.location.zipCode(),
+            city: `${fakerEn.location.city()}, ${fakerEn.location.state({ abbreviated: true })}`,
+            country: EU_COUNTRY_NAMES_EN[countryCode],
+            phone: fakerEn.phone.number(),
+            email: fakerEn.internet.email(),
+            siret: fakeEin(fakerEn),
+            tvaIntra,
+          };
+        })()
+      : (() => {
+          const country = pickNonEuCountry(locale, fakerEn);
+          return {
+            name: fakerEn.company.name(),
+            addressLine1: fakerEn.location.streetAddress(),
+            zip: fakerEn.location.zipCode(),
+            city: `${fakerEn.location.city()}, ${fakerEn.location.state({ abbreviated: true })}`,
+            country,
+            phone: fakerEn.phone.number(),
+            email: fakerEn.internet.email(),
+            siret: fakeEin(fakerEn),
+          };
+        })();
+
+    const seller = {
+      name: fakerEn.company.name(),
+      addressLine1: fakerEn.location.streetAddress(),
+      zip,
+      city: `${cityName}, ${state}`,
+      country: "France",
+      phone: fakerEn.phone.number(),
+      email: fakerEn.internet.email(),
+      siret: fakeEin(fakerEn),
+      ...(isCeeIntraNoVat ? { tvaFr: `EIN ${fakeEin(fakerEn)}` } : {}),
+    };
+
+    const totals = computeTotals(lines);
+
+    return {
+      invoiceNumber: `INV-${fakerEn.string.alphanumeric({ length: 8, casing: "upper" })}`,
+      issueDate: formatDate(issue, locale),
+      dueDate: formatDate(due, locale),
+      seller,
+      buyer,
+      lines,
+      totals,
+      paymentTerms: fakerEn.helpers.arrayElement([
+        "Net 30 from invoice date.",
+        "Due on receipt.",
+        "ACH / wire transfer within 15 days.",
+        "Credit card on file.",
+      ]),
+      iban: fakeUsBankLine(fakerEn),
+      paymentDelayDays: fakerEn.number.int({ min: 15, max: 45 }),
+      legalFooter: isCeeIntraNoVat
+        ? [
+            "No VAT shown on the invoice (intracom transaction).",
+            "Fictitious entity for testing only.",
+          ].join(" — ")
+        : [
+            "No VAT shown on the invoice (out of VAT scope).",
+            "Fictitious entity for testing only.",
+          ].join(" — "),
+    };
+  }
 
   if (locale === "fr") {
     const sellerSiren = fakeSiren(fakerFr);
@@ -122,7 +355,7 @@ export function generateFakeInvoiceData(
       phone: fakerFr.phone.number(),
       email: fakerFr.internet.email(),
       siret: fakeSiret(fakerFr),
-      tvaIntra: fakeTvaIntraEu(fakerFr),
+      tvaIntra: fakeTvaIntraEu(fakerFr).tvaIntra,
     };
 
     const totals = computeTotals(lines);
@@ -191,7 +424,7 @@ export function generateFakeInvoiceData(
     phone: fakerEn.phone.number(),
     email: fakerEn.internet.email(),
     siret: fakeEin(fakerEn),
-    tvaIntra: fakeTvaIntraEu(fakerEn),
+    tvaIntra: fakeTvaIntraEu(fakerEn).tvaIntra,
   };
 
   const totals = computeTotals(lines);
