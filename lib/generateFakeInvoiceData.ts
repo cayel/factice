@@ -136,7 +136,7 @@ export function generateFakeInvoiceData(
   const isCeeIntraNoVat = vatRegime === "cee_intra_no_vat";
   if (vatRegime === "cee_intra_no_vat" || vatRegime === "etranger_no_vat") {
     if (locale === "fr") {
-      const sellerSiren = fakeSiren(fakerFr);
+      const buyerSiren = fakeSiren(fakerFr);
 
       const lines: InvoiceLine[] = Array.from({ length: n }, () => ({
         description: fakerFr.commerce.productName(),
@@ -153,7 +153,21 @@ export function generateFakeInvoiceData(
       const due = new Date(issue);
       due.setDate(due.getDate() + fakerFr.number.int({ min: 15, max: 45 }));
 
-      const buyer = isCeeIntraNoVat
+      // Client en France ; en intracom, il peut avoir une TVA FR (simulée).
+      const buyer = {
+        name: fakerFr.company.name(),
+        addressLine1: fakerFr.location.streetAddress(),
+        zip: fakerFr.location.zipCode(),
+        city: fakerFr.location.city(),
+        country: "France",
+        phone: fakerFr.phone.number(),
+        email: fakerFr.internet.email(),
+        siret: fakeSiret(fakerFr),
+        ...(isCeeIntraNoVat ? { tvaIntra: fakeTvaFr(fakerFr, buyerSiren) } : {}),
+      };
+
+      // Fournisseur UE (intracom) ou hors UE (étranger).
+      const seller = isCeeIntraNoVat
         ? (() => {
             const { countryCode, tvaIntra } = fakeTvaIntraEu(fakerFr);
             return {
@@ -165,7 +179,7 @@ export function generateFakeInvoiceData(
               phone: fakerFr.phone.number(),
               email: fakerFr.internet.email(),
               siret: fakeSiret(fakerFr),
-              tvaIntra,
+              tvaFr: tvaIntra,
             };
           })()
         : (() => {
@@ -181,20 +195,6 @@ export function generateFakeInvoiceData(
               siret: fakeSiret(fakerFr),
             };
           })();
-
-      const seller = {
-        name: fakerFr.company.name(),
-        addressLine1: fakerFr.location.streetAddress(),
-        zip: fakerFr.location.zipCode(),
-        city: fakerFr.location.city(),
-        country: "France",
-        phone: fakerFr.phone.number(),
-        email: fakerFr.internet.email(),
-        siret: fakeSiret(fakerFr),
-        ...(isCeeIntraNoVat
-          ? { tvaFr: fakeTvaFr(fakerFr, sellerSiren) }
-          : {}),
-      };
 
       const totals = computeTotals(lines);
 
@@ -246,7 +246,20 @@ export function generateFakeInvoiceData(
     const due = new Date(issue);
     due.setDate(due.getDate() + fakerEn.number.int({ min: 15, max: 45 }));
 
-    const buyer = isCeeIntraNoVat
+    // Buyer in France (simulated). In intracom, keep a buyer VAT ID value.
+    const buyer = {
+      name: fakerEn.company.name(),
+      addressLine1: fakerEn.location.streetAddress(),
+      zip,
+      city: `${cityName}, ${state}`,
+      country: "France",
+      phone: fakerEn.phone.number(),
+      email: fakerEn.internet.email(),
+      siret: fakeEin(fakerEn),
+      ...(isCeeIntraNoVat ? { tvaIntra: `FR${fakerEn.string.numeric(2)}${fakerEn.string.numeric(9)}` } : {}),
+    };
+
+    const seller = isCeeIntraNoVat
       ? (() => {
           const { countryCode, tvaIntra } = fakeTvaIntraEu(fakerEn);
           return {
@@ -258,7 +271,7 @@ export function generateFakeInvoiceData(
             phone: fakerEn.phone.number(),
             email: fakerEn.internet.email(),
             siret: fakeEin(fakerEn),
-            tvaIntra,
+            tvaFr: tvaIntra,
           };
         })()
       : (() => {
@@ -274,18 +287,6 @@ export function generateFakeInvoiceData(
             siret: fakeEin(fakerEn),
           };
         })();
-
-    const seller = {
-      name: fakerEn.company.name(),
-      addressLine1: fakerEn.location.streetAddress(),
-      zip,
-      city: `${cityName}, ${state}`,
-      country: "France",
-      phone: fakerEn.phone.number(),
-      email: fakerEn.internet.email(),
-      siret: fakeEin(fakerEn),
-      ...(isCeeIntraNoVat ? { tvaFr: `EIN ${fakeEin(fakerEn)}` } : {}),
-    };
 
     const totals = computeTotals(lines);
 
