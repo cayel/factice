@@ -7,6 +7,7 @@ export type Messages = {
   headerTagline: string;
   headerDescription: string;
   guide: string;
+  whatsNewCta: string;
   docType: string;
   disposition: string;
   vatTitle: string;
@@ -33,6 +34,13 @@ export type Messages = {
     closeBackdropAria: string;
     close: string;
     start: string;
+  };
+  whatsNew: {
+    badge: string;
+    title: string;
+    intro: string;
+    closeBackdropAria: string;
+    close: string;
   };
   /** Préfixe fichier PDF téléchargé (sans extension). */
   pdfFilenameFacture: string;
@@ -159,6 +167,7 @@ export const messages: Record<Locale, Messages> = {
     headerDescription:
       "Données aléatoires, champs modulables, export PDF pour valider votre flux comptable.",
     guide: "Guide",
+    whatsNewCta: "Nouveautés",
     docType: "Type de document",
     disposition: "Disposition",
     vatTitle: "Régime TVA",
@@ -242,6 +251,14 @@ export const messages: Record<Locale, Messages> = {
       close: "Fermer",
       start: "Commencer",
     },
+    whatsNew: {
+      badge: "Mise à jour",
+      title: "Nouveautés & corrections",
+      intro:
+        "Voici ce qui a changé depuis votre dernière visite. Vous pouvez rouvrir cet écran à tout moment via “Nouveautés” dans l’en-tête.",
+      closeBackdropAria: "Fermer les nouveautés",
+      close: "OK",
+    },
     pdfFilenameFacture: "facture-fictive",
     pdfFilenameFacturette: "facturette-fictive",
     langFr: "FR",
@@ -276,6 +293,7 @@ export const messages: Record<Locale, Messages> = {
     headerDescription:
       "Random data, configurable fields, scan-style PDF export to validate your accounting flows.",
     guide: "Guide",
+    whatsNewCta: "What’s new",
     docType: "Document type",
     disposition: "Layout",
     vatTitle: "VAT regime",
@@ -355,6 +373,14 @@ export const messages: Record<Locale, Messages> = {
       closeBackdropAria: "Close guide",
       close: "Close",
       start: "Get started",
+    },
+    whatsNew: {
+      badge: "Update",
+      title: "What’s new & fixes",
+      intro:
+        "Here’s what changed since your last visit. You can reopen this screen anytime via “What’s new” in the header.",
+      closeBackdropAria: "Close what’s new",
+      close: "OK",
     },
     pdfFilenameFacture: "fictitious-invoice",
     pdfFilenameFacturette: "fictitious-simplified-invoice",

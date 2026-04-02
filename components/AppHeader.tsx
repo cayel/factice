@@ -9,6 +9,8 @@ import type { Locale } from "@/lib/i18n/types";
 export type AppHeaderProps = {
   /** Rouvre la modale d’accueil / guide. */
   onOpenWelcome?: () => void;
+  /** Rouvre la modale “Nouveautés”. */
+  onOpenWhatsNew?: () => void;
 };
 
 function langButtonClass(active: boolean) {
@@ -20,7 +22,7 @@ function langButtonClass(active: boolean) {
   ].join(" ");
 }
 
-export function AppHeader({ onOpenWelcome }: AppHeaderProps) {
+export function AppHeader({ onOpenWelcome, onOpenWhatsNew }: AppHeaderProps) {
   const { locale, setLocale, messages } = useLocale();
 
   const pickLocale = (next: Locale) => {
@@ -94,6 +96,29 @@ export function AppHeader({ onOpenWelcome }: AppHeaderProps) {
                     />
                   </svg>
                   {messages.guide}
+                </button>
+              )}
+              {onOpenWhatsNew && (
+                <button
+                  type="button"
+                  onClick={onOpenWhatsNew}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#a5f3fc] bg-white/90 px-3 py-1.5 text-[12px] font-medium text-[#0e7490] shadow-sm hover:bg-[#ecfeff]"
+                >
+                  <svg
+                    className="size-3.5 shrink-0 opacity-90"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 2v6m0 0 3-3m-3 3-3-3M4 14a8 8 0 0 0 16 0"
+                    />
+                  </svg>
+                  {messages.whatsNewCta}
                 </button>
               )}
             </div>

@@ -5,11 +5,13 @@ import { track } from "@vercel/analytics";
 import { AppHeader } from "@/components/AppHeader";
 import { FieldSelector } from "@/components/FieldSelector";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
+import { WhatsNewDialog } from "@/components/WhatsNewDialog";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import { useLocale } from "@/lib/i18n/context";
 import { formatMoneyAmount, formatTaxPercent } from "@/lib/format";
 import { defaultFieldSelection, getFieldGroups } from "@/lib/invoiceFieldConfig";
 import { generateFakeInvoiceData } from "@/lib/generateFakeInvoiceData";
+import { WHATS_NEW_ENTRIES, WHATS_NEW_VERSION } from "@/lib/whatsNew";
 import {
   VAT_REGIMES,
   type VatRegimeId,
@@ -30,6 +32,10 @@ import {
   readWelcomeDismissed,
   writeWelcomeDismissed,
 } from "@/lib/welcomeStorage";
+import {
+  readWhatsNewLastSeen,
+  writeWhatsNewLastSeen,
+} from "@/lib/whatsNewStorage";
 
 export default function Home() {
   const { locale, messages } = useLocale();
@@ -45,8 +51,11 @@ export default function Home() {
   const [data, setData] = useState<InvoiceData | null>(null);
   const [busy, setBusy] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   /** Incrémenté à chaque ouverture du guide pour réinitialiser l’état de la modale. */
   const [welcomeKey, setWelcomeKey] = useState(0);
+  /** Incrémenté à chaque ouverture des nouveautés pour réinitialiser l’état de la modale. */
+  const [whatsNewKey, setWhatsNewKey] = useState(0);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const fieldGroups = useMemo(() => getFieldGroups(locale), [locale]);
@@ -67,6 +76,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const lastSeen = readWhatsNewLastSeen();
+    if (lastSeen !== WHATS_NEW_VERSION) {
+      setWhatsNewOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
     setData(generateFakeInvoiceData(lineCount, locale, vatRegime));
   }, [lineCount, locale, vatRegime]);
 
@@ -83,6 +99,16 @@ export default function Home() {
   const openWelcome = useCallback(() => {
     setWelcomeKey((k) => k + 1);
     setWelcomeOpen(true);
+  }, []);
+
+  const openWhatsNew = useCallback(() => {
+    setWhatsNewKey((k) => k + 1);
+    setWhatsNewOpen(true);
+  }, []);
+
+  const handleWhatsNewClose = useCallback(() => {
+    writeWhatsNewLastSeen(WHATS_NEW_VERSION);
+    setWhatsNewOpen(false);
   }, []);
 
   const randomizeData = useCallback(() => {
@@ -128,7 +154,15 @@ export default function Home() {
         open={welcomeOpen}
         onClose={handleWelcomeClose}
       />
-      <AppHeader onOpenWelcome={openWelcome} />
+      <WhatsNewDialog
+        key={whatsNewKey}
+        open={whatsNewOpen}
+        locale={locale}
+        versionLabel={WHATS_NEW_VERSION}
+        entries={WHATS_NEW_ENTRIES}
+        onClose={handleWhatsNewClose}
+      />
+      <AppHeader onOpenWelcome={openWelcome} onOpenWhatsNew={openWhatsNew} />
 
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 sm:gap-5 sm:py-5 lg:flex-row lg:items-start">
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-4 lg:max-w-md">
